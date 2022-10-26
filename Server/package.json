@@ -1,0 +1,22 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Potla SaiPrasad",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "express-handlebars": "^6.0.6",
+    "express-hbs": "^2.4.0",
+    "handlebars": "^4.7.7",
+    "hbs": "^4.2.0",
+    "mongodb": "^4.11.0",
+    "mongoose": "^6.6.5",
+    "validator": "^13.7.0"
+  }
+}
