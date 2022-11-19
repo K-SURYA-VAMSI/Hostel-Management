@@ -12,9 +12,6 @@ const userSchema= new mongoose.Schema({
     FreeRooms:{
         type:Number
     },
-    OccupiedCount:{
-        type:Number
-    },
     RoomRent:{
         type:Number
     },
