@@ -1,0 +1,245 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.Room{
+  border:5px solid black;
+  display:inline-block;
+  background-color: #585b5c;
+  color:white;
+  margin:10px;
+  padding:10px;
+}
+
+.error-template {padding: 40px 15px;text-align: center;}
+.error-actions {margin-top:15px;margin-bottom:15px;}
+.error-actions .btn { margin-right:10px; }
+
+
+
+body{
+  padding:0px;
+  margin: 0px;
+}
+
+.update{
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+.centers{
+  text-align: center;
+  margin-bottom: 10px;
+  margin-top: 15px;
+}
+
+.background{
+  margin-top:50px;
+
+}
+
+.register{
+  margin-top:40px;
+}
+
+.success{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 80px;
+}
+.but{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.inputs{
+ 
+  width:350px;
+}
+
+
+
+
+
+.meny {
+  position: absolute;
+  top:10%;
+  left:10%;
+}
+
+.lsb {
+  position: absolute;
+  top:10%;
+  left:25%;
+  margin-left:20px;
+}
+
+.hioa {
+  position: absolute;
+  top:10%;
+  left:43%;
+  margin-left:20px;
+}
+.one{
+  position: absolute;
+  top:12%;
+  left:70%;
+}
+
+
+.meny1 {
+  position: absolute;
+  top:5%;
+  left:10%;
+}
+
+.lsb1 {
+  position: absolute;
+  top:15%;
+  left:25%;
+  margin-left:20px;
+}
+
+.hioa1 {
+  position: absolute;
+  top:15%;
+  left:43%;
+  margin-left:20px;
+}
+.one1{
+  position: absolute;
+  top:15%;
+    left:90%;
+}
+
+.joke{
+  position: absolute;
+  top:20%;
+  left:70%;
+  transform:translate(-50%,-50%);
+  color:green;
+  font-size: 40px;
+}
+.two{
+  position: absolute;
+  top:45%;
+  left:60%;
+  width:400px;
+  height:200px;
+  font-size: 20px;
+  text-align: center;
+  /* box-shadow: 12px 12px 2px 1px gray; */
+  /* text-decoration: dashed; */
+}
+.two h2{
+  padding-bottom: 30px;
+  color:brown;
+  /* text-decoration: underline; */
+}
+.two button{
+  width:150px;
+  height: 40px;
+  text-decoration:none;
+  /* border-radius: 20px; */
+  border:none;
+  background-color: rgb(93, 79, 107);
+  color:white;
+  border-radius: 50%;
+  /* box-shadow: 12px 10px 2px 1px gray; */
+}
+
+.myClass img{
+  width:100vw;
+  height:92.5vh;
+}
+
+a{
+  color:white;
+  text-decoration:none;
+}
+.holla{
+  display:flex;
+  border:4px solid rgb(28, 25, 25);
+  margin:60px;
+  padding:20px;
+  width:400px;
+}
+.holla input[type=text] :hover{
+  background-color:gray;
+  color:white;
+}
+.holla button{
+  margin:10px;
+}
+
+.outer{
+ position:absolute;
+ left:450px;
+ top: 13%;
+  border:2px solid red;
+  height:500px;
+
+}
+
+.outside{
+  margin-top:3%;
+  margin-left: 20%;
+}
+
+.forbutton{
+  margin-left: 29%;
+}
+
+.outsides{
+  margin-top:1%;
+  margin-left: 20%;
+}
+
+.grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px,1fr));
+  grid-template-rows: 400px 400px;
+  grid-gap: 60px;
+}
+
+.middle{
+  margin-top:15px;
+  text-align: center;
+}
