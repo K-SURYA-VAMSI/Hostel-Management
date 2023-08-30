@@ -1,13 +1,14 @@
 const express=require('express');
 const app=express();
 const port=8000;
+require("dotenv").config()
 
  const userController=require("./controllers/userController")
  const roomController=require("./controllers/roomController")
 
 // establishing Database Connection
 const mongoose=require('mongoose');
-const url='mongodb+srv://saiprasad:saiprasad@cluster0.huuoxxb.mongodb.net/mernstack?retryWrites=true&w=majority';
+const url=process.env.MONGO_URL;
 mongoose.connect(url).then(()=>{
     console.log("connection Done")
 }).catch((error)=>{

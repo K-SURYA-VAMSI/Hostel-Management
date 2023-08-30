@@ -1,6 +1,7 @@
 import React,{useState} from 'react'
 import AdminNav from './AdminNav'
 
+
 function AddRoom(){
   
   const [user,setUser]=useState({
