@@ -5,6 +5,8 @@ import { DetailsContext } from './DetailsContext';
 import {useContext} from 'react';
 import { useNavigate } from "react-router-dom";
 import LoginNav from './LoginNav';
+import { Button } from '@mui/material';
+
 const Room=(data)=>
 {
   const navigate = useNavigate();
@@ -42,13 +44,14 @@ const SetMethod=(e)=>{
     <div>
     <p>Room features : {data.roomFeatures}</p>
     </div>
-    <div class="container">
-      {data.freerooms>0?<button onClick={SetMethod} name="roomNumber" value={data.RoomNumber}>Book</button>:<button disabled>House Full</button>}
+    <div class="d-flex justify-content-center">
+      {data.freerooms>0?<Button variant="contained"   onClick={SetMethod} name="roomNumber" >Book</Button>:<Button disabled>House Full</Button>}
     </div>
     </div>
     </> 
   )
 }
 
+{/* <Button variant="outlined">Outlined</Button> */}
 
 export default Room

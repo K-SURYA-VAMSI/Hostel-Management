@@ -89,10 +89,10 @@ catch(error){
 
 
 <NavBar/>
-<div class="outside">
-  <div class="container">
+<div class="outside d-flex justify-content-center mt-5">
+  <div class="d-flex justify-content-center">
   
-<form onSubmit={mainFunction} class="row g-3">
+<form onSubmit={mainFunction} class="row g-3 d-flex justify-content-center">
 
   <div class="col-md-8">
     <label for="email" class="form-label">Email</label>
@@ -103,7 +103,7 @@ catch(error){
     <input onChange={valueSetter} type="password" name="password" class="form-control" id="password" value={user.password} required/>
   </div>
   <div class="forbutton">
-  <div class="col-12">
+  <div class="d-flex justify-content-center">
     <button type="submit" class="btn btn-primary">Login</button>
     </div>
   </div>

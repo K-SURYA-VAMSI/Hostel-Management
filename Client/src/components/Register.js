@@ -70,7 +70,7 @@ async function mainFunction(e){
 <NavBar/>
 <div class="outside">
 <div class='container'>
-<form onSubmit={mainFunction} class="row g-3">
+<form onSubmit={mainFunction} class="row g-3 mt-4" style={{display:"flex",justifyContent:"center"}}>
 <div class="col-md-8">
     <label for="name" class="form-label">Name</label>
     <input onChange={valueSetter} type="text" name="name" class="form-control" id="name" value={user.name} required/>
@@ -95,8 +95,8 @@ async function mainFunction(e){
     <label for="panCard" class="form-label">Pan Card</label>
     <input onChange={valueSetter} type="text" name="panCard" class="form-control" id="panCard" value={user.panCard}/>
   </div>
-  <div class="forbutton">
-  <div class="col-12">
+  <div class="forbutton  d-flex justify-content-center">
+  <div class="col-md-8 d-flex justify-content-center">
     <button type="submit" class="btn btn-primary">Register</button>
   </div>
   </div>

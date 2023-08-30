@@ -7,13 +7,13 @@ function Home() {
     <div>
       <NavBar/>
       <div class="myClass">
-        <img src={final1} alt="Not found" />
+        <img src={final1} alt="Not found"   />
         {/* <strong><h1 class="joke" >Hostel Management System</h1></strong> */}
         
     </div>
     <div class="two">
         <h2>This Module helps the users to get better shelter and great user experience</h2>
-        <button><a href='/register'>Get Started</a></button>
+        <button><a href='/register' className='loginLink'>Get Started</a></button>
     </div>
     </div>
   )

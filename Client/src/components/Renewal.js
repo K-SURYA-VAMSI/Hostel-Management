@@ -92,7 +92,12 @@ return (
   <input type="number"  onChange={valueSetter} name="CVV" value={Data.CVV} class="form-control" id="exampleInputPassword1"/>
 </div>
 
+<div className='d-flex justify-content-center'>
+
     {value!=="user"?<button type="submit" class="btn btn-primary">Renew</button>:<button type="submit" class="btn btn-primary" disabled>Renew</button>} 
+
+</div>
+
 
 </form>
 

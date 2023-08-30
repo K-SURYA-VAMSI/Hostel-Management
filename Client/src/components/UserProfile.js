@@ -102,7 +102,7 @@ if(data){
     <LoginNav/>
     <div class="container">
 <div class="update"><h2>Update Details... </h2></div>
-    <form onSubmit={Sender}>
+    <form onSubmit={Sender} >
     <div class="mb-3">
     <label for="exampleInputEmail1" class="form-label">Name </label>
     <input type="text" onChange={valueSetter} name="name" value={user.name} placeholder={content.name} class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp"/>
@@ -130,7 +130,10 @@ if(data){
     <input type="text" name="checkInDate" value={content.checkInDate} class="form-control" id="exampleInputPassword1" disabled/>
   </div>
  
-  <button type="submit" class="btn btn-primary">Update</button>
+ <div className='d-flex justify-content-center'>
+  <button type="submit" class="btn btn-primary ">Update</button>
+
+ </div>
 </form>
 
     </div>
