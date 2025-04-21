@@ -1,63 +1,260 @@
-const register= require("../Db/register");
-const rooms=require("../Db/Rooms");
-const validator=require("validator")
+const register = require("../Db/register");
+const rooms = require("../Db/Rooms");
+const validator = require("validator");
 
+// Helper function to validate password strength
+const isStrongPassword = (password) => {
+    return validator.isStrongPassword(password, {
+        minLength: 8,
+        minLowercase: 1,
+        minUppercase: 1,
+        minNumbers: 1,
+        minSymbols: 1
+    });
+};
 
-module.exports.register=(req,res)=>{
-    console.log(req.body);
-    const aadharNumber=req.body.aadarCard;
-    const panCard=req.body.panCard;
-    const email=req.body.email;
-    const password=req.body.password;
-    const name=req.body.name;
-    const mobile=req.body.mobile;
-    const AmountPaid=0;
-    const BookedRoomNo=0;
-    const Active=true;   // will be set to True after fee payment and checkIn
-    const TimePeriod=0;
-    const checkInDate=new Date();
-    const adminApproval=false;  // Admin have to approve Users account
+module.exports.register = async (req, res) => {
+    try {
+        console.log("Registration attempt:", {
+            ...req.body,
+            password: '***' // Hide password in logs
+        });
+        const { name, email, password, mobile, aadarCard, panCard } = req.body;
 
-   const reg=new register({name,email,mobile,aadharNumber,panCard,password,AmountPaid,TimePeriod,BookedRoomNo,checkInDate,Active,adminApproval});
+        // Validate required fields
+        if (!name || !email || !password || !mobile || !aadarCard) {
+            return res.status(400).json({
+                success: false,
+                message: "All fields are required (except PAN card which is optional)"
+            });
+        }
 
-   reg.save().then((obj)=>{console.log("successfully registered");
-   res.status(200).send(obj); //redirect to Login Page and dont allow him to book rooms now itself
-}).catch((error)=>{
-    console.log("couldn't registered");
-    res.send(error); 
-});
+        // Validate email format
+        if (!validator.isEmail(email)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid email format"
+            });
+        }
+
+        // Validate password strength
+        if (!isStrongPassword(password)) {
+            return res.status(400).json({
+                success: false,
+                message: "Password must be at least 8 characters long and contain uppercase, lowercase, number and special character"
+            });
+        }
+
+        // Validate mobile number
+        const mobileStr = mobile.toString().replace(/\D/g, '');
+        if (mobileStr.length !== 10) {
+            return res.status(400).json({
+                success: false,
+                message: "Mobile number must be exactly 10 digits"
+            });
+        }
+
+        // Validate Aadhar card
+        const aadharStr = aadarCard.toString().replace(/\D/g, '');
+        if (aadharStr.length !== 12) {
+            return res.status(400).json({
+                success: false,
+                message: "Aadhar number must be exactly 12 digits"
+            });
+        }
+
+        // Check if user already exists
+        const existingUser = await register.findOne({
+            $or: [
+                { email: email },
+                { mobile: mobileStr },
+                { aadharNumber: aadharStr }
+            ]
+        });
+
+        if (existingUser) {
+            let message = "User already exists with this ";
+            if (existingUser.email === email) message += "email address";
+            else if (existingUser.mobile === mobileStr) message += "mobile number";
+            else if (existingUser.aadharNumber === aadharStr) message += "Aadhar number";
+
+            console.log("Duplicate user found:", {
+                attemptedEmail: email,
+                existingEmail: existingUser.email,
+                attemptedMobile: mobileStr,
+                existingMobile: existingUser.mobile,
+                attemptedAadhar: aadharStr,
+                existingAadhar: existingUser.aadharNumber
+            });
+
+            return res.status(409).json({
+                success: false,
+                message: message
+            });
+        }
+
+        // Create new user with default values
+        const newUser = new register({
+            name,
+            email,
+            password,
+            mobile: mobileStr,
+            aadharNumber: aadharStr,
+            panCard: panCard ? panCard.toUpperCase() : undefined,
+            AmountPaid: 0,
+            BookedRoomNo: 0,
+            Active: true,
+            TimePeriod: 0,
+            checkInDate: new Date(),
+            adminApproval: true,
+            isAdmin: false
+        });
+
+        const savedUser = await newUser.save();
+        console.log("User registered successfully:", {
+            email: savedUser.email,
+            mobile: savedUser.mobile,
+            aadharNumber: savedUser.aadharNumber
+        });
+        
+        return res.status(201).json({
+            success: true,
+            message: "Registration successful! You can now login.",
+            user: {
+                name: savedUser.name,
+                email: savedUser.email,
+                mobile: savedUser.mobile
+            }
+        });
+
+    } catch (error) {
+        console.error("Registration error details:", {
+            error: error.message,
+            stack: error.stack,
+            code: error.code
+        });
+
+        // Check for MongoDB duplicate key error
+        if (error.code === 11000) {
+            const field = Object.keys(error.keyPattern)[0];
+            const fieldName = {
+                email: "email address",
+                mobile: "mobile number",
+                aadharNumber: "Aadhar number",
+                panCard: "PAN card"
+            }[field] || field;
+
+            return res.status(409).json({
+                success: false,
+                message: `This ${fieldName} is already registered`
+            });
+        }
+
+        return res.status(500).json({
+            success: false,
+            message: "Registration failed. Please try again.",
+            error: error.message
+        });
+    }
 }
 
-module.exports.login=(req,res)=>{
-    const email=req.body.email;
-    const password=req.body.password;
-   
-    if(!validator.isEmail(email)||password==="")
-    {
-        res.send("Enter Valid Details to Login");
-    }
+module.exports.login = async (req, res) => {
+    try {
+        const { email, password } = req.body;
 
-    register.findOne({email:email,password:password}).then((data)=>{
-        if(data){
-            // Check if user is admin
-            if(data.isAdmin) {
-                res.json({
-                    ...data.toObject(),
-                    isAdmin: true
-                });
-            } else {
-                res.json({
-                    ...data.toObject(),
-                    isAdmin: false
-                });
+        // Log the login attempt with full request body
+        console.log("Login attempt details:", {
+            email,
+            passwordLength: password ? password.length : 0,
+            body: req.body
+        });
+
+        // Validate required fields
+        if (!email || !password) {
+            console.log("Missing required fields:", { email: !!email, password: !!password });
+            return res.status(400).json({
+                success: false,
+                message: "Email and password are required"
+            });
+        }
+
+        // Validate email format
+        if (!validator.isEmail(email)) {
+            console.log("Invalid email format:", email);
+            return res.status(400).json({
+                success: false,
+                message: "Invalid email format"
+            });
+        }
+
+        // Find user by email first
+        const user = await register.findOne({ email });
+        console.log("User lookup result:", {
+            found: !!user,
+            email: email,
+            userEmail: user ? user.email : null
+        });
+        
+        if (!user) {
+            console.log("No user found with email:", email);
+            return res.status(401).json({
+                success: false,
+                message: "Invalid email or password"
+            });
+        }
+
+        // Check password
+        const passwordMatch = user.password === password;
+        console.log("Password check:", {
+            match: passwordMatch,
+            providedLength: password.length,
+            storedLength: user.password.length
+        });
+
+        if (!passwordMatch) {
+            console.log("Password mismatch for user:", email);
+            return res.status(401).json({
+                success: false,
+                message: "Invalid email or password"
+            });
+        }
+
+        // Check if user is approved by admin (if needed)
+        if (!user.adminApproval) {
+            console.log("User not approved by admin:", email);
+            return res.status(403).json({
+                success: false,
+                message: "Account pending admin approval"
+            });
+        }
+
+        // Successful login
+        console.log("User logged in successfully:", email);
+        
+        return res.status(200).json({
+            success: true,
+            message: "Login successful",
+            user: {
+                name: user.name,
+                email: user.email,
+                mobile: user.mobile,
+                isAdmin: user.isAdmin || false,
+                BookedRoomNo: user.BookedRoomNo || 0,
+                AmountPaid: user.AmountPaid || 0,
+                TimePeriod: user.TimePeriod || 0,
+                checkInDate: user.checkInDate,
+                Active: user.Active
             }
-        }
-        else{
-            res.send("No user found with these credentials");
-        }
-    }).catch((error)=>{
-        res.send(error);
-    });
+        });
+
+    } catch (error) {
+        console.error("Login error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error during login",
+            error: error.message
+        });
+    }
 }
 
 module.exports.userDetails=(req,res)=>{

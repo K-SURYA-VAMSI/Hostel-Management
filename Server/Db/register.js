@@ -10,44 +10,53 @@ const userSchema= new mongoose.Schema({
         unique:[true,"Email already registered"]
     },
     mobile:{
-        type:Number,
+        type:String,
         required:true,
-        unique:[true,"Number already registered"],
-        min:10
+        unique:[true,"Number already registered"]
     },
     aadharNumber:{
-        type:Number,
+        type:String,
         required:true,
         unique:[true,"Account already exists with same Aadhar Number"],
-        min:12
+        validate: {
+            validator: function(v) {
+                return /^\d{12}$/.test(v);
+            },
+            message: props => `${props.value} is not a valid Aadhar number!`
+        }
     },
     panCard:{
         type:String, 
-        unique:[true,"Account already exists with same Aadhar Number"]
+        unique:[true,"Account already exists with same PAN Card"]
     },
     password:{
         type:String,
         required:true,
-        min:[8,"password should contain atleast digits"]
+        minlength:[8,"password should contain at least 8 characters"]
     },
     AmountPaid:{
-        type:Number
+        type:Number,
+        default: 0
     },
-    TimePeriod:{  // For how many Days he booked that room
-        // input will be number of months
-        type:Number
+    TimePeriod:{
+        type:Number,
+        default: 0
     },
     BookedRoomNo:{
-        type:Number
+        type:Number,
+        default: 0
     },
     checkInDate:{
-        type:Date
+        type:Date,
+        default: Date.now
     },
     Active:{
-        type:Boolean
+        type:Boolean,
+        default: true
     },
     adminApproval:{
-        type:Boolean
+        type:Boolean,
+        default: true
     },
     isAdmin: {
         type: Boolean,

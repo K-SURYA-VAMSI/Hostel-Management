@@ -16,7 +16,13 @@ function Register(){
 function valueSetter(e)
 {
   const name=e.target.name;
-  const value=e.target.value;
+  let value=e.target.value;
+
+  // Remove any non-numeric characters for mobile and aadarCard
+  if (name === 'mobile' || name === 'aadarCard') {
+    value = value.replace(/\D/g, '');
+  }
+
   setUser({...user, [name]: value});
 }
 
@@ -24,45 +30,80 @@ function valueSetter(e)
 async function mainFunction(e){
   e.preventDefault();
 
-  // validating the inputs , if ok sending to server
-  if (validator.isStrongPassword(user.password, {
-    minLength: 8, minLowercase: 1,
-    minUppercase: 1, minNumbers: 1, minSymbols: 1
-  })&&(validator.isEmail(user.email))&&(user.mobile.toString().length>=10)&&(user.aadarCard.toString().length==12))
-  {
-    const res= await fetch("/register",{
-      method:"POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify(user)
-    
-    });
-    
-    const data= await res.json();
-    if(data){
-    navigate('/Login');
-    }else{
-      console.log("error in catch")
+  try {
+    // Validate name
+    if (!user.name || user.name.trim().length < 2) {
+      alert("Please enter a valid name (at least 2 characters)");
+      return;
     }
 
-  } 
-  else if(!validator.isStrongPassword(user.password, {
-    minLength: 8, minLowercase: 1,
-    minUppercase: 1, minNumbers: 1, minSymbols: 1
-  }))
-  {
-    alert("Enter a Strong Password");  
-  }
-  else if(!validator.isEmail(user.email))
-  {
-   alert("Enter valid email address");
-  }
-  else if(user.aadarCard.toString().length<12)
- {
-  alert("Enter a Valid Aadar Card Number");
+    // Validate email
+    if (!validator.isEmail(user.email)) {
+      alert("Please enter a valid email address");
+      return;
+    }
 
- }
- } 
- 
+    // Validate password
+    if (!validator.isStrongPassword(user.password, {
+      minLength: 8, minLowercase: 1,
+      minUppercase: 1, minNumbers: 1, minSymbols: 1
+    })) {
+      alert("Password must be at least 8 characters long and contain uppercase, lowercase, numbers and symbols");
+      return;
+    }
+
+    // Validate mobile number
+    if (!user.mobile || user.mobile.length !== 10) {
+      alert("Please enter a valid 10-digit mobile number");
+      return;
+    }
+
+    // Validate Aadhar card
+    if (!user.aadarCard || user.aadarCard.length !== 12) {
+      alert("Please enter a valid 12-digit Aadhar Card Number");
+      return;
+    }
+
+    // Validate PAN card (optional but if provided should be valid)
+    if (user.panCard && !validator.matches(user.panCard.toUpperCase(), /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/)) {
+      alert("Please enter a valid PAN card number (e.g., ABCDE1234F)");
+      return;
+    }
+
+    // All validations passed, proceed with registration
+    console.log("Attempting registration...");
+
+    const res = await fetch("http://localhost:8000/register", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        ...user,
+        mobile: user.mobile,
+        aadarCard: user.aadarCard,
+        panCard: user.panCard ? user.panCard.toUpperCase() : user.panCard
+      })
+    });
+    
+    const data = await res.json();
+    console.log("Server response:", data);
+
+    if (!res.ok) {
+      alert(data.message || "Registration failed");
+      return;
+    }
+
+    if (data.success) {
+      alert("Registration successful! Please login.");
+      navigate('/Login');
+    } else {
+      alert(data.message || "Registration failed");
+    }
+  } catch (error) {
+    console.error("Registration error:", error);
+    alert("Registration failed. Please try again.");
+  }
+}
+
     return(   
      
         <div >
@@ -89,7 +130,7 @@ async function mainFunction(e){
   </div>
   <div class="col-md-8">
     <label for="aadarCard" class="form-label">Aadhar Card</label>
-    <input onChange={valueSetter} type="text" name="aadarCard" class="form-control" id="aadarCard" value={user.aadharCard} required/>
+    <input onChange={valueSetter} type="text" name="aadarCard" class="form-control" id="aadarCard" value={user.aadarCard} required/>
   </div>
   <div class="col-md-8">
     <label for="panCard" class="form-label">Pan Card</label>

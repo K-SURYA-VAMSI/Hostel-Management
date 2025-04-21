@@ -27,6 +27,12 @@ const Login = () => {
     setError("");
 
     try {
+      // Log the login attempt
+      console.log("Attempting login with:", {
+        email: user.email,
+        passwordLength: user.password.length
+      });
+
       if (!validator.isEmail(user.email)) {
         setError("Please enter a valid email address");
         return;
@@ -51,27 +57,31 @@ const Login = () => {
       }
 
       // Regular user login
-      const res = await fetch("/login", {
+      console.log("Sending login request to server...");
+      const res = await fetch("http://localhost:8000/login", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(user)
       });
       
+      const data = await res.json();
+      console.log("Server response:", data);
+      
       if (!res.ok) {
-        throw new Error("Login failed");
+        setError(data.message || "Login failed");
+        return;
       }
 
-      const data = await res.json();
-      if(data) {
+      if (data.success) {
         console.log("User login successful");
-        setValue(user.email);
+        setValue(data.user.email);
         localStorage.setItem("userType", "user");
-        localStorage.setItem("user", data.email);
-        localStorage.setItem("BookedRoomNo", data.BookedRoomNo);
-        localStorage.setItem("AmountPaid", data.AmountPaid);
+        localStorage.setItem("user", data.user.email);
+        localStorage.setItem("BookedRoomNo", data.user.BookedRoomNo);
+        localStorage.setItem("AmountPaid", data.user.AmountPaid);
         navigate('/main');
       } else {
-        setError("Invalid credentials");
+        setError(data.message || "Invalid credentials");
       }
     } catch(error) {
       console.error("Login error:", error);
