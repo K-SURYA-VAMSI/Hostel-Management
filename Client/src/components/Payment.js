@@ -92,12 +92,13 @@ function Payment() {
                 body: JSON.stringify({
                     email: userEmail,
                     AmountPaid: parseFloat(amount),
-                    BookedRoomNo: Detail.RoomNumber,
+                    BookedRoomNo: parseInt(Detail.RoomNumber),
                     TimePeriod: parseInt(month),
                 }),
             });
 
             const data = await response.json();
+            console.log("Server response:", data); // Debug log
 
             if (!response.ok) {
                 throw new Error(data.error || "Payment failed");
@@ -105,16 +106,27 @@ function Payment() {
 
             if (data.success) {
                 // Update localStorage with booking details
-                localStorage.setItem("roomNumber", data.bookingDetails.roomNumber);
-                localStorage.setItem("checkInDate", data.bookingDetails.checkInDate);
+                localStorage.setItem("roomNumber", Detail.RoomNumber);
+                localStorage.setItem("BookedRoomNo", Detail.RoomNumber);
+                localStorage.setItem("AmountPaid", amount.toString());
+                localStorage.setItem("TimePeriod", month.toString());
+                localStorage.setItem("checkInDate", new Date().toISOString());
                 localStorage.setItem("Active", "true");
-                localStorage.setItem("BookedRoomNo", data.bookingDetails.roomNumber);
-                localStorage.setItem("AmountPaid", data.bookingDetails.amount);
+
+                console.log("Booking details saved:", {
+                    roomNumber: Detail.RoomNumber,
+                    amount: amount,
+                    months: month,
+                    checkInDate: new Date().toISOString()
+                });
 
                 setSuccess(true);
                 setSuccessMessage("Payment successful! Room booked successfully.");
+                
+                // Refresh the page after navigation to ensure data is reloaded
                 setTimeout(() => {
-                    navigate("/dashboard");
+                    navigate("/MyProfile");
+                    window.location.reload();
                 }, 2000);
             } else {
                 throw new Error(data.error || "Payment failed");

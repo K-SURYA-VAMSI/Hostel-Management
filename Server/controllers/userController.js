@@ -257,36 +257,74 @@ module.exports.login = async (req, res) => {
     }
 }
 
-module.exports.userDetails=(req,res)=>{
+module.exports.userDetails = async (req, res) => {
+    try {
+        const { email } = req.body;
 
-    const email=req.body.email;
-
-    if(!validator.isEmail(email))
-    {
-        res.send("Enter Valid Details to Login");
-    }
-
-    register.findOne({email:email}).then((data)=>{
-        if(data){
-            console.log(data)
-         res.json({
-            name:data.name,
-            email:data.email,
-            mobile:data.mobile,
-            BookedRoom:data.BookedRoomNo,
-            AmountPaid:data.AmountPaid,
-            TimePeriod:data.TimePeriod,
-            checkInDate:data.checkInDate
-  
-         })
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: "Email is required"
+            });
         }
-         else{
-            res.json({response:"No user found with this values"});
-         }
-    }).catch((error)=>{
-        res.send(error);
-    });
 
+        if (!validator.isEmail(email)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid email format"
+            });
+        }
+
+        console.log("Fetching user details for email:", email);
+        const user = await register.findOne({ email });
+        
+        if (!user) {
+            console.log("User not found for email:", email);
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        // Log complete user data for debugging
+        console.log("Complete user data:", {
+            name: user.name,
+            email: user.email,
+            BookedRoomNo: user.BookedRoomNo,
+            AmountPaid: user.AmountPaid,
+            TimePeriod: user.TimePeriod,
+            checkInDate: user.checkInDate,
+            Active: user.Active
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "User details fetched successfully",
+            user: {
+                name: user.name,
+                email: user.email,
+                mobile: user.mobile,
+                BookedRoomNo: user.BookedRoomNo,
+                AmountPaid: user.AmountPaid,
+                TimePeriod: user.TimePeriod,
+                checkInDate: user.checkInDate,
+                Active: user.Active
+            },
+            debug: {
+                rawBookedRoomNo: user.BookedRoomNo,
+                rawTimePeriod: user.TimePeriod,
+                rawCheckInDate: user.checkInDate
+            }
+        });
+
+    } catch (error) {
+        console.error("Error in userDetails:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error fetching user details",
+            error: error.message
+        });
+    }
 }
 
 module.exports.userDetailsUpdate=(req,res)=>{

@@ -1,144 +1,196 @@
 import React from 'react';
 import { UserContext } from './UserContext';
-import {useContext,useState,useEffect} from 'react';
+import { useContext, useState, useEffect } from 'react';
 import LoginNav from "./LoginNav";
-import {useNavigate} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
-const UserProfile=()=> {
-  const navigate=useNavigate();
-const {value,setValue}=useContext(UserContext);
-const [content,setContent]=useState({
-  name:"",
-  email:"",
-  mobile:"",
-  BookedRoom:"",
-  AmountPaid:"",
-  TimePeriod:"",
-  checkInDate:""
-});
+const UserProfile = () => {
+  const navigate = useNavigate();
+  const { value, setValue } = useContext(UserContext);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [userDetails, setUserDetails] = useState({
+    name: "",
+    email: "",
+    mobile: "",
+    BookedRoomNo: "",
+    AmountPaid: "",
+    TimePeriod: "",
+    checkInDate: ""
+  });
 
-const [user,setUser]=useState({
-  name:"",
-  email:"",
-  mobile:"",
-  BookedRoom:"",
-  AmountPaid:"",
-  TimePeriod:"",
-  checkInDate:""
-});
+  useEffect(() => {
+    const fetchUserDetails = async () => {
+      try {
+        const email = localStorage.getItem("user");
+        console.log("Stored email:", email); // Debug log
 
-const username=localStorage.getItem("user")
-if(username==="user"){
-  navigate("/Login");
-}
-const userdata={
-    email:localStorage.getItem("user")
-}
+        if (!email || email === "user") {
+          console.log("No valid email found in localStorage");
+          navigate("/Login");
+          return;
+        }
 
-useEffect(()=>{
-  
-  async function mainFunction(){
-    const res= await fetch("/userDetail",{
-      method:"POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify(userdata)
-    
-    });
-  
-    const data= await res.json();
-    if(data){
-       const xyz={
-        name:data.name,
-        email:data.email,
-        mobile:data.mobile,
-        BookedRoom:data.BookedRoom,
-        AmountPaid:data.AmountPaid,
-        TimePeriod:data.TimePeriod,
-        checkInDate:data.checkInDate
+        console.log("Fetching details for email:", email); // Debug log
+
+        const res = await fetch("http://localhost:8000/userDetail", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify({ email })
+        });
+
+        console.log("Response status:", res.status); // Debug log
+
+        const data = await res.json();
+        console.log("Response data:", data); // Debug log
+
+        if (!res.ok) {
+          throw new Error(data.message || `Server returned ${res.status}: ${data.error || 'Unknown error'}`);
+        }
+
+        if (!data.success) {
+          throw new Error(data.message || "Server returned unsuccessful response");
+        }
+
+        if (!data.user) {
+          throw new Error("No user data received from server");
+        }
+
+        // Get booking details from localStorage
+        const storedRoomNo = localStorage.getItem("BookedRoomNo");
+        const storedAmount = localStorage.getItem("AmountPaid");
+        const storedPeriod = localStorage.getItem("TimePeriod");
+        const storedCheckInDate = localStorage.getItem("checkInDate");
+
+        console.log("Stored booking details:", {
+          roomNo: storedRoomNo,
+          amount: storedAmount,
+          period: storedPeriod,
+          checkInDate: storedCheckInDate
+        });
+
+        setUserDetails({
+          name: data.user.name || "Not provided",
+          email: data.user.email || "Not provided",
+          mobile: data.user.mobile || "Not provided",
+          BookedRoomNo: storedRoomNo || (data.user.BookedRoomNo > 0 ? data.user.BookedRoomNo.toString() : "Not booked"),
+          AmountPaid: parseInt(storedAmount) || data.user.AmountPaid || 0,
+          TimePeriod: storedPeriod 
+            ? `${storedPeriod} months`
+            : data.user.TimePeriod > 0 
+              ? `${data.user.TimePeriod} months` 
+              : 'No active booking',
+          checkInDate: storedCheckInDate 
+            ? new Date(storedCheckInDate).toLocaleDateString('en-IN')
+            : data.user.checkInDate 
+              ? new Date(data.user.checkInDate).toLocaleDateString('en-IN')
+              : "Not checked in"
+        });
+
+        // Log the data sources for debugging
+        console.log("Data sources:", {
+          fromServer: {
+            BookedRoomNo: data.user.BookedRoomNo,
+            AmountPaid: data.user.AmountPaid,
+            TimePeriod: data.user.TimePeriod,
+            checkInDate: data.user.checkInDate
+          },
+          fromLocalStorage: {
+            BookedRoomNo: localStorage.getItem("BookedRoomNo"),
+            AmountPaid: localStorage.getItem("AmountPaid"),
+            TimePeriod: localStorage.getItem("TimePeriod"),
+            checkInDate: localStorage.getItem("checkInDate")
+          }
+        });
+      } catch (error) {
+        console.error("Error fetching user details:", error);
+        setError(error.message || "Failed to load user details. Please try logging in again.");
+        
+        // If there's an authentication error, redirect to login
+        if (error.message.includes("401") || error.message.includes("403")) {
+          localStorage.removeItem("user");
+          navigate("/Login");
+        }
+      } finally {
+        setLoading(false);
       }
-     
-      setContent(content=>{ return{...content,...xyz}});
-    
-    }else{
-      console.log("error in catch")
-    }
-  
+    };
+
+    fetchUserDetails();
+  }, [navigate]);
+
+  if (loading) {
+    return (
+      <>
+        <LoginNav />
+        <div className="container mt-5">
+          <div className="text-center">
+            <div className="spinner-border" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            <p>Loading user details...</p>
+          </div>
+        </div>
+      </>
+    );
   }
-mainFunction();
-
-},[])
-
-//  value setter
-function valueSetter(e)
-{
-  const name=e.target.name;
-  const value=e.target.value;
-  setUser({...user, [name]: value});
-}
-
-// send to Db
-async function Sender(e){
-e.preventDefault();
-
-const res= await fetch("/userupdate",{
-  method:"POST",
-  headers: {"Content-Type":"application/json"},
-  body: JSON.stringify(user)
-
-});
-
-const data= await res.json();
-if(data){
-  alert("Details Updated")
-}else{
-  console.log("error in catch")
-}
-
-
-}
 
   return (
     <>
-    <LoginNav/>
-    <div class="container">
-<div class="update"><h2>Update Details... </h2></div>
-    <form onSubmit={Sender} >
-    <div class="mb-3">
-    <label for="exampleInputEmail1" class="form-label">Name </label>
-    <input type="text" onChange={valueSetter} name="name" value={user.name} placeholder={content.name} class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp"/>
-  </div>
-  <div class="mb-3">
-    <label for="exampleInputEmail1" class="form-label">Email address</label>
-    <input type="email" onChange={valueSetter} name="email" value={user.email} placeholder={content.email} class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp"/>
-  </div>
-  <div class="mb-3">
-    <label for="exampleInputPassword1" class="form-label">Mobile Number</label>
-    <input type="text" onChange={valueSetter} name="mobile" value={user.mobile} placeholder={content.mobile} class="form-control" id="exampleInputPassword1"/>
-  </div>
-  <div class="mb-3">
-    <label for="exampleInputPassword1" class="form-label">BookedRoom Number</label>
-    <input type="text" onChange={valueSetter} name="BookedRoom" value={content.BookedRoom} class="form-control" id="exampleInputPassword1" disabled/>
-  </div>
-
-  <div class="mb-3">
-    <label for="exampleInputPassword1" class="form-label">Booked Months</label>
-    <input type="text" onChange={valueSetter} name="TimePeriod" value={content.TimePeriod} class="form-control" id="exampleInputPassword1" disabled/>
-  </div>
-
-  <div class="mb-3">
-    <label for="exampleInputPassword1" class="form-label">CheckInDate</label>
-    <input type="text" name="checkInDate" value={content.checkInDate} class="form-control" id="exampleInputPassword1" disabled/>
-  </div>
- 
- <div className='d-flex justify-content-center'>
-  <button type="submit" class="btn btn-primary ">Update</button>
-
- </div>
-</form>
-
-    </div>
+      <LoginNav />
+      <div className="container mt-5">
+        {error ? (
+          <div className="alert alert-danger" role="alert">
+            <h4 className="alert-heading">Error Loading Profile</h4>
+            <p>{error}</p>
+            <hr />
+            <p className="mb-0">
+              Please try <button className="btn btn-link p-0" onClick={() => window.location.reload()}>refreshing the page</button> or <button className="btn btn-link p-0" onClick={() => navigate("/Login")}>logging in again</button>.
+            </p>
+          </div>
+        ) : (
+          <div className="card">
+            <div className="card-header bg-primary text-white">
+              <h3 className="mb-0">My Profile</h3>
+            </div>
+            <div className="card-body">
+              <div className="row mb-3">
+                <div className="col-md-3"><strong>Name:</strong></div>
+                <div className="col-md-9">{userDetails.name}</div>
+              </div>
+              <div className="row mb-3">
+                <div className="col-md-3"><strong>Email:</strong></div>
+                <div className="col-md-9">{userDetails.email}</div>
+              </div>
+              <div className="row mb-3">
+                <div className="col-md-3"><strong>Mobile:</strong></div>
+                <div className="col-md-9">{userDetails.mobile}</div>
+              </div>
+              <div className="row mb-3">
+                <div className="col-md-3"><strong>Room Number:</strong></div>
+                <div className="col-md-9">{userDetails.BookedRoomNo}</div>
+              </div>
+              <div className="row mb-3">
+                <div className="col-md-3"><strong>Amount Paid:</strong></div>
+                <div className="col-md-9">₹{typeof userDetails.AmountPaid === 'number' ? userDetails.AmountPaid.toLocaleString('en-IN') : '0'}</div>
+              </div>
+              <div className="row mb-3">
+                <div className="col-md-3"><strong>Booking Duration:</strong></div>
+                <div className="col-md-9">{userDetails.TimePeriod}</div>
+              </div>
+              <div className="row mb-3">
+                <div className="col-md-3"><strong>Check-in Date:</strong></div>
+                <div className="col-md-9">{userDetails.checkInDate}</div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </>
-  )
-}
+  );
+};
 
-export default UserProfile
+export default UserProfile;
