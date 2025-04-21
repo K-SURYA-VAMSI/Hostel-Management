@@ -1,105 +1,252 @@
-import React,{useState} from 'react'
-import AdminNav from './AdminNav'
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import AdminNav from './AdminNav';
 
+const API_BASE_URL = "http://localhost:8000";
 
-function AddRoom(){
-  
-  const [user,setUser]=useState({
-    RoomNumber:"",
-    floor:"",
-    RoomRent:"",
-    roomCapacity:"",
-    roomRating:"",
-    roomFeatures:"",
-    roomDescription:"",
-    Ac:true
-  });
+const AddRoom = () => {
+    const navigate = useNavigate();
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
+    const [loading, setLoading] = useState(true);
+    const [isAdmin, setIsAdmin] = useState(false);
 
-
-function valueSetter(e)
-{
-  const name=e.target.name;
-  const value=e.target.value;
-  setUser({...user, [name]: value});
-}
-
-
-async function mainFunction(e){
-  e.preventDefault();
-
-  try{
-    const res= await fetch("/roomregister",{
-      method:"POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify(user)
-    
+    const [roomData, setRoomData] = useState({
+        RoomNumber: "",
+        floor: "",
+        RoomRent: "",
+        roomCapacity: "",
+        roomDescription: "",
+        roomFeatures: "",
+        ac: false
     });
-    
-    const data= await res.json();
-    if(data){
-    alert("Room Successfully Added")
-    }else{
-      alert("Failed to add Room")
+
+    // Check if user is admin
+    useEffect(() => {
+        const checkAdmin = () => {
+            try {
+                const userType = localStorage.getItem("userType");
+                const user = localStorage.getItem("user");
+                
+                console.log("Current userType:", userType);
+                console.log("Current user:", user);
+                
+                if (userType === "admin" && user === "admin@gmail.com") {
+                    console.log("Admin authentication successful");
+                    setIsAdmin(true);
+                } else {
+                    console.log("Not authenticated as admin, redirecting to login");
+                    // Clear any stale authentication data
+                    localStorage.clear();
+                    navigate("/login");
+                }
+            } catch (error) {
+                console.error("Error checking admin status:", error);
+                navigate("/login");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        checkAdmin();
+    }, [navigate]);
+
+    const handleInputChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setRoomData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError("");
+        setSuccess("");
+        setLoading(true);
+
+        try {
+            // Validate inputs
+            if (!roomData.RoomNumber || !roomData.floor || !roomData.RoomRent) {
+                setError("Room number, floor, and rent are required");
+                return;
+            }
+
+            const response = await fetch(`${API_BASE_URL}/admin/rooms/create`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(roomData)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            setSuccess("Room added successfully!");
+            
+            // Clear form
+            setRoomData({
+                RoomNumber: "",
+                floor: "",
+                RoomRent: "",
+                roomCapacity: "",
+                roomDescription: "",
+                roomFeatures: "",
+                ac: false
+            });
+
+        } catch (error) {
+            console.error('Error adding room:', error);
+            setError(error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Show loading state while checking admin status
+    if (loading) {
+        return (
+            <div className="container mt-5">
+                <div className="text-center">
+                    <div className="spinner-border" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                    </div>
+                    <p className="mt-2">Checking admin authentication...</p>
+                </div>
+            </div>
+        );
     }
-  }catch(e)
-  {
-    alert("Unable to Add Room")
-  }
 
+    // If not admin and not loading, the useEffect will handle the redirect
+    if (!isAdmin) {
+        return null;
+    }
 
- } 
- 
-    return(   
-     
-        <div >
+    return (
+        <div>
+            <AdminNav />
+            <div className="container mt-4">
+                <h2 className="text-center mb-4">Add New Room</h2>
+                
+                {error && (
+                    <div className="alert alert-danger" role="alert">
+                        {error}
+                    </div>
+                )}
+                
+                {success && (
+                    <div className="alert alert-success" role="alert">
+                        {success}
+                    </div>
+                )}
 
-<AdminNav/>
-<div class="outsides">
-<div class='container'>
+                <div className="row justify-content-center">
+                    <div className="col-md-6">
+                        <form onSubmit={handleSubmit}>
+                            <div className="mb-3">
+                                <label htmlFor="RoomNumber" className="form-label">Room Number*</label>
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    id="RoomNumber"
+                                    name="RoomNumber"
+                                    value={roomData.RoomNumber}
+                                    onChange={handleInputChange}
+                                    required
+                                />
+                            </div>
 
-<form onSubmit={mainFunction} class="row g-3">
-<div class="col-md-8">
-    <label for="RoomNumber" class="form-label">Room Number</label>
-    <input onChange={valueSetter} type="text" name="RoomNumber" class="form-control" id="RoomNumber" value={user.RoomNumber} required/>
-  </div>
-  <div class="col-md-8">
-    <label for="floor" class="form-label">Floor</label>
-    <input onChange={valueSetter} type="text" name="floor" class="form-control" id="floor" value={user.floor} required/>
-  </div>
-  <div class="col-md-8">
-    <label for="RoomRent" class="form-label">Rent</label>
-    <input onChange={valueSetter} type="text" name="RoomRent" class="form-control" id="RoomRent" value={user.RoomRent} required/>
-  </div>
-  <div class="col-md-8">
-    <label for="roomCapacity" class="form-label">Room Capacity</label>
-    <input onChange={valueSetter} type="number" name="roomCapacity" class="form-control" id="roomCapacity" value={user.roomCapacity} required/>
-  </div>
-  <div class="col-md-8">
-    <label for="roomRating" class="form-label">Room Rating</label>
-    <input onChange={valueSetter} type="number" name="roomRating" class="form-control" id="roomRating" value={user.roomRating} required/>
-  </div>
-  <div class="col-md-8">
-    <label for="roomDescription" class="form-label">Room Description</label>
-    <input onChange={valueSetter} type="text" name="roomDescription" class="form-control" id="roomDescription" value={user.roomDescription} required/>
-  </div>
-  <div class="col-md-8">
-    <label for="roomFeatures" class="form-label">Room Features</label>
-    <input onChange={valueSetter} type="text" name="roomFeatures" class="form-control" id="roomFeatures" value={user.roomFeatures}/>
-  </div>
-  <div class="forbutton">
-  <div class="col-12">
-    <button type="submit" class="btn btn-primary">Add Room</button>
-  </div>
-  </div>
-</form>
-</div>
-</div>
+                            <div className="mb-3">
+                                <label htmlFor="floor" className="form-label">Floor*</label>
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    id="floor"
+                                    name="floor"
+                                    value={roomData.floor}
+                                    onChange={handleInputChange}
+                                    required
+                                />
+                            </div>
 
-        </div>   
-        
-        
-       
+                            <div className="mb-3">
+                                <label htmlFor="RoomRent" className="form-label">Room Rent*</label>
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    id="RoomRent"
+                                    name="RoomRent"
+                                    value={roomData.RoomRent}
+                                    onChange={handleInputChange}
+                                    required
+                                />
+                            </div>
+
+                            <div className="mb-3">
+                                <label htmlFor="roomCapacity" className="form-label">Room Capacity</label>
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    id="roomCapacity"
+                                    name="roomCapacity"
+                                    value={roomData.roomCapacity}
+                                    onChange={handleInputChange}
+                                />
+                            </div>
+
+                            <div className="mb-3">
+                                <label htmlFor="roomDescription" className="form-label">Room Description</label>
+                                <textarea
+                                    className="form-control"
+                                    id="roomDescription"
+                                    name="roomDescription"
+                                    value={roomData.roomDescription}
+                                    onChange={handleInputChange}
+                                    rows="3"
+                                />
+                            </div>
+
+                            <div className="mb-3">
+                                <label htmlFor="roomFeatures" className="form-label">Room Features</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    id="roomFeatures"
+                                    name="roomFeatures"
+                                    value={roomData.roomFeatures}
+                                    onChange={handleInputChange}
+                                    placeholder="e.g., Attached bathroom, Balcony"
+                                />
+                            </div>
+
+                            <div className="mb-3 form-check">
+                                <input
+                                    type="checkbox"
+                                    className="form-check-input"
+                                    id="ac"
+                                    name="ac"
+                                    checked={roomData.ac}
+                                    onChange={handleInputChange}
+                                />
+                                <label className="form-check-label" htmlFor="ac">Air Conditioned</label>
+                            </div>
+
+                            <button 
+                                type="submit" 
+                                className="btn btn-primary w-100"
+                                disabled={loading}
+                            >
+                                {loading ? 'Adding Room...' : 'Add Room'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
-}
+};
 
 export default AddRoom;

@@ -48,8 +48,11 @@ const userSchema= new mongoose.Schema({
     },
     adminApproval:{
         type:Boolean
+    },
+    isAdmin: {
+        type: Boolean,
+        default: false
     }
-
 });
 
 const register=new mongoose.model('register',userSchema);

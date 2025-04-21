@@ -29,7 +29,6 @@ module.exports.register=(req,res)=>{
 }
 
 module.exports.login=(req,res)=>{
-
     const email=req.body.email;
     const password=req.body.password;
    
@@ -40,15 +39,25 @@ module.exports.login=(req,res)=>{
 
     register.findOne({email:email,password:password}).then((data)=>{
         if(data){
-         res.send(data);
+            // Check if user is admin
+            if(data.isAdmin) {
+                res.json({
+                    ...data.toObject(),
+                    isAdmin: true
+                });
+            } else {
+                res.json({
+                    ...data.toObject(),
+                    isAdmin: false
+                });
+            }
         }
-         else{
-            res.send("No user found with this values");
-         }
+        else{
+            res.send("No user found with these credentials");
+        }
     }).catch((error)=>{
         res.send(error);
     });
-
 }
 
 module.exports.userDetails=(req,res)=>{
