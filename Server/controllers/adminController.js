@@ -91,7 +91,17 @@ exports.getAllRooms = async (req, res) => {
 // Create a new room
 exports.createRoom = async (req, res) => {
     try {
-        const room = new Room(req.body);
+        // Set default values and ensure FreeRooms is set
+        const roomData = {
+            ...req.body,
+            roomCapacity: req.body.roomCapacity || 1,
+            FreeRooms: req.body.FreeRooms || req.body.roomCapacity || 1,
+            roomDescription: req.body.roomDescription || "Standard Room",
+            roomFeatures: req.body.roomFeatures || "Basic Amenities",
+            ac: req.body.ac || false
+        };
+
+        const room = new Room(roomData);
         await room.save();
         res.status(201).json(room);
     } catch (error) {
@@ -104,12 +114,29 @@ exports.createRoom = async (req, res) => {
 exports.updateRoom = async (req, res) => {
     try {
         const { roomId, updates } = req.body;
-        console.log('Updating room:', roomId, 'with:', updates);
         
-        const room = await Room.findByIdAndUpdate(roomId, updates, { new: true });
+        // Set default values if not provided
+        const roomData = {
+            ...updates,
+            roomCapacity: updates.roomCapacity || 1,
+            FreeRooms: updates.FreeRooms || updates.roomCapacity || 1,
+            roomDescription: updates.roomDescription || "Standard Room",
+            roomFeatures: updates.roomFeatures || "Basic Amenities",
+            ac: updates.ac || false
+        };
+
+        console.log('Updating room:', roomId, 'with:', roomData);
+        
+        const room = await Room.findByIdAndUpdate(
+            roomId, 
+            { $set: roomData },
+            { new: true }
+        );
+
         if (!room) {
             return res.status(404).json({ message: 'Room not found' });
         }
+
         res.json(room);
     } catch (error) {
         console.error('Error in updateRoom:', error);

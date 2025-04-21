@@ -5,65 +5,108 @@ import {useState,useEffect,useContext} from 'react'
 import { UserContext } from './UserContext';
 import {useNavigate} from "react-router-dom";
 
+const API_BASE_URL = "http://localhost:8000";
+
 function MainPage() {
-  const [count, setCount] = useState([]);
+  const [rooms, setRooms] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const {value,setValue}=useContext(UserContext);
   const navigate=useNavigate();
 
-  const username=localStorage.getItem("user")
-  if(username==="user"){
-    navigate("/Login");
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${API_BASE_URL}/roomDetail`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Fetched rooms:', data);
+        setRooms(data);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching rooms:', err);
+        setError('Failed to load rooms. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Check if user is logged in
+    const user = localStorage.getItem("user");
+    if (!user || user === "user") {
+      navigate("/login");
+      return;
+    }
+
+    fetchRooms();
+  }, [navigate]);
+  
+  if (loading) {
+    return (
+      <>
+        <LoginNav/>
+        <div className="container mt-5">
+          <div className="text-center">
+            <div className="spinner-border" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            <p>Loading rooms...</p>
+          </div>
+        </div>
+      </>
+    );
   }
 
-  useEffect(()=>{
-    fetch("/roomDetail").then(function(response) {
-      response.json().then(function(users){
-        console.log(users); 
-      setCount(users)   
-      });
-    }).catch(err => console.error(err));
-  
-  },[])
-
-  console.log(localStorage.getItem("user"))
-  
-  return (
-   <>
-
-   <LoginNav/>
-
-   <div class="centers">
-    <h3>Welcome {localStorage.getItem("user")}</h3>
-   </div>
-
-    <br/>
-
-    <div className="container">
-        <div className="row">
-            
-  {
-    
-count.map((i)=>{
-  //take room numbers from here "i" and get images of them and send as props to rooms page
-return(
-<div className='col-lg-4'>
-<Room RoomNumber={i.RoomNumber} 
-floor={i.floor}
-freerooms={i.FreeRooms}
-roomrent={i.RoomRent}
-roomFeatures={i.roomFeatures}
-description={i.roomDescription}
-/>
-
-</div>
-)
-
-})}
+  if (error) {
+    return (
+      <>
+        <LoginNav/>
+        <div className="container mt-5">
+          <div className="alert alert-danger" role="alert">
+            {error}
+          </div>
         </div>
-    </div>
-  
-  </>
-  )
+      </>
+    );
+  }
+
+  return (
+    <>
+      <LoginNav/>
+      <div className="centers">
+        <h3>Welcome {localStorage.getItem("user")}</h3>
+      </div>
+
+      <div className="container mt-4">
+        {rooms.length === 0 ? (
+          <div className="alert alert-info">
+            No rooms are currently available.
+          </div>
+        ) : (
+          <div className="row">
+            {rooms.map((room) => (
+              <div className="col-lg-4 mb-4" key={room._id}>
+                <Room 
+                  RoomNumber={room.RoomNumber}
+                  floor={room.floor}
+                  freerooms={room.FreeRooms}
+                  roomrent={room.RoomRent}
+                  roomFeatures={room.roomFeatures || "Basic Amenities"}
+                  description={room.roomDescription || "Standard Room"}
+                  ac={room.ac || false}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  );
 }
 
-export default MainPage
+export default MainPage;

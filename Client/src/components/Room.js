@@ -7,50 +7,56 @@ import { useNavigate } from "react-router-dom";
 import LoginNav from './LoginNav';
 import { Button } from '@mui/material';
 
-const Room=(data)=>
-{
+const Room = ({ RoomNumber, floor, freerooms, roomrent, roomFeatures, description, ac }) => {
   const navigate = useNavigate();
-  const {Detail,setDetail}=useContext(DetailsContext);
+  const { setDetail } = useContext(DetailsContext);
 
-const SetMethod=(e)=>{
+  const handleBooking = () => {
+    setDetail({
+      RoomNumber: RoomNumber,
+      feeAmount: roomrent
+    });
 
-  setDetail({
-   RoomNumber:data.RoomNumber,
-   feeAmount:data.roomrent
-  })
+    navigate("/Payment");
+  };
 
-  navigate("/Payment");
-}
-
-  return(
-  <>
-    <div className='Room'>
-      <div class='images'>
-       <img src={pic2} alt="image" width={350} height={200} />
+  return (
+    <div className="card h-100">
+      <img src={pic2} className="card-img-top" alt="Room" style={{ height: '200px', objectFit: 'cover' }} />
+      <div className="card-body">
+        <h5 className="card-title">Room {RoomNumber}</h5>
+        <div className="room-details">
+          <p><strong>Floor:</strong> {floor}</p>
+          <p><strong>Available Beds:</strong> {freerooms}</p>
+          <p><strong>Monthly Rent:</strong> ₹{roomrent}/-</p>
+          <p><strong>Features:</strong> {roomFeatures}</p>
+          <p><strong>Description:</strong> {description}</p>
+          <p><strong>AC:</strong> {ac ? 'Yes' : 'No'}</p>
         </div>
-    <h2>Room Number : {data.RoomNumber}</h2>
-    <div>
-    <p>Floor : {data.floor}</p>
+        <div className="text-center mt-3">
+          {freerooms > 0 ? (
+            <Button 
+              variant="contained" 
+              color="primary" 
+              onClick={handleBooking}
+              fullWidth
+            >
+              Book Now
+            </Button>
+          ) : (
+            <Button 
+              variant="contained" 
+              disabled 
+              fullWidth
+            >
+              House Full
+            </Button>
+          )}
+        </div>
+      </div>
     </div>
-    <div>
-    <p>Available beds : {data.freerooms}</p>
-    </div>
-    <div>
-    <p>Room Rent : {data.roomrent}/-</p>
-    </div>
-    <div>
-    <p>About Room: {data.description}</p>
-    </div>
-    <div>
-    <p>Room features : {data.roomFeatures}</p>
-    </div>
-    <div class="d-flex justify-content-center">
-      {data.freerooms>0?<Button variant="contained"   onClick={SetMethod} name="roomNumber" >Book</Button>:<Button disabled>House Full</Button>}
-    </div>
-    </div>
-    </> 
-  )
-}
+  );
+};
 
 {/* <Button variant="outlined">Outlined</Button> */}
 

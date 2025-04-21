@@ -15,7 +15,8 @@ const AddRoom = () => {
         RoomNumber: "",
         floor: "",
         RoomRent: "",
-        roomCapacity: "",
+        roomCapacity: "1",
+        FreeRooms: "",
         roomDescription: "",
         roomFeatures: "",
         ac: false
@@ -36,7 +37,6 @@ const AddRoom = () => {
                     setIsAdmin(true);
                 } else {
                     console.log("Not authenticated as admin, redirecting to login");
-                    // Clear any stale authentication data
                     localStorage.clear();
                     navigate("/login");
                 }
@@ -53,10 +53,26 @@ const AddRoom = () => {
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setRoomData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }));
+        let newValue = type === 'checkbox' ? checked : value;
+        
+        // Convert numeric fields to numbers
+        if (type === 'number') {
+            newValue = value === '' ? '' : Number(value);
+        }
+
+        setRoomData(prev => {
+            const updated = {
+                ...prev,
+                [name]: newValue
+            };
+
+            // Automatically set FreeRooms equal to roomCapacity when roomCapacity changes
+            if (name === 'roomCapacity') {
+                updated.FreeRooms = newValue;
+            }
+
+            return updated;
+        });
     };
 
     const handleSubmit = async (e) => {
@@ -72,6 +88,17 @@ const AddRoom = () => {
                 return;
             }
 
+            // Validate numeric fields
+            if (roomData.RoomRent <= 0) {
+                setError("Room rent must be greater than 0");
+                return;
+            }
+
+            if (roomData.roomCapacity < 1) {
+                setError("Room capacity must be at least 1");
+                return;
+            }
+
             const response = await fetch(`${API_BASE_URL}/admin/rooms/create`, {
                 method: 'POST',
                 headers: {
@@ -81,7 +108,8 @@ const AddRoom = () => {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorData = await response.json();
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
@@ -92,7 +120,8 @@ const AddRoom = () => {
                 RoomNumber: "",
                 floor: "",
                 RoomRent: "",
-                roomCapacity: "",
+                roomCapacity: "1",
+                FreeRooms: "1",
                 roomDescription: "",
                 roomFeatures: "",
                 ac: false
@@ -149,7 +178,7 @@ const AddRoom = () => {
                             <div className="mb-3">
                                 <label htmlFor="RoomNumber" className="form-label">Room Number*</label>
                                 <input
-                                    type="number"
+                                    type="text"
                                     className="form-control"
                                     id="RoomNumber"
                                     name="RoomNumber"
@@ -173,7 +202,7 @@ const AddRoom = () => {
                             </div>
 
                             <div className="mb-3">
-                                <label htmlFor="RoomRent" className="form-label">Room Rent*</label>
+                                <label htmlFor="RoomRent" className="form-label">Room Rent (per month)*</label>
                                 <input
                                     type="number"
                                     className="form-control"
@@ -181,12 +210,13 @@ const AddRoom = () => {
                                     name="RoomRent"
                                     value={roomData.RoomRent}
                                     onChange={handleInputChange}
+                                    min="1"
                                     required
                                 />
                             </div>
 
                             <div className="mb-3">
-                                <label htmlFor="roomCapacity" className="form-label">Room Capacity</label>
+                                <label htmlFor="roomCapacity" className="form-label">Room Capacity*</label>
                                 <input
                                     type="number"
                                     className="form-control"
@@ -194,7 +224,10 @@ const AddRoom = () => {
                                     name="roomCapacity"
                                     value={roomData.roomCapacity}
                                     onChange={handleInputChange}
+                                    min="1"
+                                    required
                                 />
+                                <small className="text-muted">Number of beds in the room</small>
                             </div>
 
                             <div className="mb-3">
@@ -206,6 +239,7 @@ const AddRoom = () => {
                                     value={roomData.roomDescription}
                                     onChange={handleInputChange}
                                     rows="3"
+                                    placeholder="e.g., Spacious room with natural lighting"
                                 />
                             </div>
 

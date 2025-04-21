@@ -1,78 +1,166 @@
 const register= require("../Db/register");
-const rooms=require("../Db/Rooms");
+const Room = require('../models/Room');
 const validator=require("validator")
 
 module.exports.roomRegister=(req,res)=>{
+    const {
+        RoomNumber,
+        floor,
+        roomCapacity = 1,
+        RoomRent,
+        roomDescription = "Standard Room",
+        roomFeatures = "Basic Amenities",
+        Ac = false
+    } = req.body;
 
-    const RoomNumber=req.body.RoomNumber;
-    const floor=req.body.floor;
-    const roomCapacity=req.body.roomCapacity;
-    const FreeRooms=roomCapacity;
-    const RoomRent=req.body.RoomRent;
-    const roomDescription=req.body.roomDescription;      
-    const roomRating=req.body.roomRating;
-    const roomFeatures=req.body.roomFeatures;
-    const Ac=req.body.Ac;
+    // Set FreeRooms equal to roomCapacity initially
+    const FreeRooms = roomCapacity;
 
-if(RoomNumber===""||floor===""||FreeRooms===""||roomCapacity===""||RoomRent===""||roomDescription===""||roomRating===""||roomFeatures===""||Ac==="")
-{
-    res.send("Enter Valid Details to register");
-}
-   const reg=new rooms({RoomNumber:RoomNumber,floor:floor,roomCapacity:roomCapacity,
-    FreeRooms:FreeRooms,RoomRent:RoomRent,roomDescription:roomDescription,
-    roomRating:roomRating,roomFeatures:roomFeatures,Ac:Ac});
+    // Validate required fields
+    if (!RoomNumber || !floor || !RoomRent) {
+        return res.status(400).json({ error: "Room Number, Floor, and Rent are required" });
+    }
 
-   reg.save().then((obj)=>{console.log("rooms successfully registered");
-   res.send(obj); //redirect to Login Page and dont allow him to book rooms now itself
-}).catch((error)=>{
-    console.log("couldn't registered");
-    res.send(error); 
-});
-}
-
-module.exports.roomDetails=(req,res)=>{
-
-    rooms.find({}).then((data)=>{
-        if(data){
-         res.send(data);
-         console.log("request came")
-        }
-         else{
-            res.send("error in fetching");
-         }
-    }).catch((error)=>{
-        res.send(error,`Error occured while Login`);
+    const reg = new Room({
+        RoomNumber,
+        floor,
+        roomCapacity,
+        FreeRooms,
+        RoomRent,
+        roomDescription,
+        roomFeatures,
+        Ac
     });
+
+    reg.save()
+        .then((obj) => {
+            console.log("Room successfully registered");
+            res.status(201).json(obj);
+        })
+        .catch((error) => {
+            console.log("Couldn't register room:", error);
+            res.status(400).json({ error: error.message });
+        });
 }
+
+module.exports.roomDetails = async (req, res) => {
+    try {
+        console.log('Fetching room details...');
+        const roomData = await Room.find({});
+        console.log('Found rooms:', roomData);
+        
+        if (!roomData || roomData.length === 0) {
+            return res.status(404).json({ error: "No rooms found" });
+        }
+
+        res.json(roomData);
+    } catch (error) {
+        console.error("Error fetching room details:", error);
+        res.status(500).json({ error: "Error fetching room details" });
+    }
+};
 
 module.exports.roomUpdator=(req,res)=>{
     const RoomNumber=req.body.RoomNumber;
     const floor=req.body.floor;
     const RoomRent=req.body.rent;
     
-    rooms.updateOne({RoomNumber},{$set:{RoomNumber,floor,RoomRent}}).then((result)=>{res.send(result)}).catch((e)=>{res.send(e);})
+    Room.updateOne({RoomNumber},{$set:{RoomNumber,floor,RoomRent}}).then((result)=>{res.send(result)}).catch((e)=>{res.send(e);})
 
 }
 
 module.exports.roomDeletor=(req,res)=>{
     const RoomNumber=req.body.RoomNumber;
 
-    rooms.deleteOne({RoomNumber}).then((result)=>{res.send(result)}).catch((e)=>{res.send(e);})
+    Room.deleteOne({RoomNumber}).then((result)=>{res.send(result)}).catch((e)=>{res.send(e);})
 
 }
 
-module.exports.feePayment=(req,res)=>{
-    const email=req.body.name;
-    const feeAmount=req.body.AmountPaid;
-    const roomNumber=req.body.BookedRoomNo;
-    const TimePeriod=req.body.TimePeriod;
+module.exports.feePayment = async (req, res) => {
+    try {
+        const { email, AmountPaid, BookedRoomNo, TimePeriod } = req.body;
+        
+        // Input validation
+        if (!email || !AmountPaid || !BookedRoomNo || !TimePeriod) {
+            return res.status(400).json({ error: "All fields are required" });
+        }
 
-    register.updateOne({email:email},{$set:{AmountPaid:feeAmount,BookedRoomNo:roomNumber,TimePeriod:TimePeriod}}).then((result)=>{}).catch((e)=>{res.send(e);})
-    rooms.updateOne({RoomNumber:roomNumber},{$inc:{FreeRooms:-1}}).then((result)=>{}).catch((e)=>{res.send(e);})
+        if (TimePeriod < 1 || TimePeriod > 12) {
+            return res.status(400).json({ error: "Time period must be between 1 and 12 months" });
+        }
 
-    res.json({"success":"ok"})
+        // Check if room exists and has space
+        const room = await Room.findOne({ RoomNumber: BookedRoomNo });
+        if (!room) {
+            return res.status(404).json({ error: "Room not found" });
+        }
 
-}
+        if (room.FreeRooms <= 0) {
+            return res.status(400).json({ error: "Room is fully occupied" });
+        }
+
+        // Validate payment amount against room rent
+        const expectedAmount = room.RoomRent * TimePeriod;
+        if (AmountPaid < expectedAmount) {
+            return res.status(400).json({ error: `Invalid payment amount. Expected: ${expectedAmount}` });
+        }
+
+        // Update room availability first
+        const roomUpdate = await Room.updateOne(
+            { 
+                RoomNumber: BookedRoomNo,
+                FreeRooms: { $gt: 0 } // Extra check to ensure room is still available
+            },
+            { $inc: { FreeRooms: -1 } }
+        );
+
+        if (!roomUpdate.matchedCount || !roomUpdate.modifiedCount) {
+            return res.status(400).json({ error: "Room is no longer available" });
+        }
+
+        // Update user booking details
+        const userUpdate = await register.updateOne(
+            { email },
+            { 
+                $set: {
+                    AmountPaid,
+                    BookedRoomNo,
+                    TimePeriod,
+                    checkInDate: new Date(),
+                    Active: true
+                }
+            }
+        );
+
+        if (!userUpdate.matchedCount) {
+            // If user update fails, revert room update
+            await Room.updateOne(
+                { RoomNumber: BookedRoomNo },
+                { $inc: { FreeRooms: 1 } }
+            );
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Success response
+        res.json({ 
+            success: true,
+            message: "Payment successful and room booked",
+            bookingDetails: {
+                roomNumber: BookedRoomNo,
+                amount: AmountPaid,
+                months: TimePeriod,
+                checkInDate: new Date()
+            }
+        });
+
+    } catch (error) {
+        console.error("Payment error:", error);
+        res.status(400).json({ 
+            success: false,
+            error: error.message || "Payment failed"
+        });
+    }
+};
 
 module.exports.feeRenewal=(req,res)=>{
     const email=req.body.name;
@@ -91,5 +179,5 @@ module.exports.roomUpdate=(req,res)=>{
     const roomRent=req.body.roomRent;
     const FreeRooms=req.body.FreeRooms;
     const OccupiedCount=req.body.OccupiedCount;
-    rooms.updateOne({RoomNumber:req.body.RoomNumber,floor:req.body.floor},{$set:{RoomRent:roomRent,FreeRooms:FreeRooms,OccupiedCount:OccupiedCount}}).then((result)=>{res.send(result);}).catch((e)=>{res.send(e);})
+    Room.updateOne({RoomNumber:req.body.RoomNumber,floor:req.body.floor},{$set:{RoomRent:roomRent,FreeRooms:FreeRooms,OccupiedCount:OccupiedCount}}).then((result)=>{res.send(result);}).catch((e)=>{res.send(e);})
 }
